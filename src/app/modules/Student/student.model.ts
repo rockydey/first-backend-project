@@ -1,14 +1,18 @@
 import { model, Schema } from 'mongoose';
 // import validator from 'validator';
 import {
-  Guardian,
-  LocalGuardian,
-  Student,
-  UserName,
+  TGuardian,
+  TLocalGuardian,
+  TStudent,
+  // StudentMethods,
+  StudentModel,
+  TUserName,
 } from './student.interface';
+import bcrypt from 'bcrypt';
+import config from '../../config';
 
 // Schema
-const userNameSchema = new Schema<UserName>({
+const userNameSchema = new Schema<TUserName>({
   firstName: {
     type: String,
     // trim: true,
@@ -37,7 +41,7 @@ const userNameSchema = new Schema<UserName>({
     // },
   },
 });
-const guardianSchema = new Schema<Guardian>({
+const guardianSchema = new Schema<TGuardian>({
   fatherName: { type: String, required: [true, 'Father name is required'] },
   fatherOccupation: {
     type: String,
@@ -58,7 +62,7 @@ const guardianSchema = new Schema<Guardian>({
   },
 });
 
-const localGuardianSchema = new Schema<LocalGuardian>({
+const localGuardianSchema = new Schema<TLocalGuardian>({
   name: {
     type: String,
     required: [true, 'Name is required'],
@@ -69,8 +73,150 @@ const localGuardianSchema = new Schema<LocalGuardian>({
   address: { type: String, required: [true, 'Address is required'] },
 });
 
-const studentSchema = new Schema<Student>({
+// const studentSchema = new Schema<Student>({
+//   id: { type: String, required: [true, 'Id is required'], unique: true },
+//   name: {
+//     type: userNameSchema,
+//     required: [true, 'Name is required'],
+//   },
+//   gender: {
+//     type: String,
+//     enum: {
+//       values: ['male', 'female', 'other'],
+//       message: '{VALUE} is not valid',
+//     },
+//     require: true,
+//   },
+//   //   gender:["male","female"]
+//   dateOfBirth: { type: String },
+//   // dateOfBirth: String,
+//   email: {
+//     type: String,
+//     required: [true, 'Email is required'],
+//     unique: true,
+//     // validate: {
+//     //   validator: (value: string) => validator.isEmail(value),
+//     //   message: '{VALUE} is not valid email',
+//     // },
+//   },
+//   contactNo: { type: String, required: [true, 'Contact no is required'] },
+//   // bloodGroup: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+//   bloodGroup: {
+//     type: String,
+//     enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+//   },
+//   emergencyContactNo: {
+//     type: String,
+//     required: [true, 'Emergency contact no is required'],
+//   },
+//   presentAddress: {
+//     type: String,
+//     required: [true, 'Present address is required'],
+//   },
+//   permanentAddress: {
+//     type: String,
+//     required: [true, 'Permanent address is required'],
+//   },
+//   guardian: {
+//     type: guardianSchema,
+//     required: [true, 'Guardian is required'],
+//   },
+//   localGuardian: {
+//     type: localGuardianSchema,
+//     required: [true, 'Local guardian is required'],
+//   },
+//   // isActive: ['active', 'inactive'],
+//   isActive: {
+//     type: String,
+//     enum: {
+//       values: ['active', 'inactive'],
+//       message: '{VALUE} is not valid',
+//     },
+//     required: true,
+//     default: 'active',
+//   },
+// });
+
+// // => Custom instance methods
+// const studentSchema = new Schema<TStudent, StudentModel, StudentMethods>({
+//   id: { type: String, required: [true, 'Id is required'], unique: true },
+//   name: {
+//     type: userNameSchema,
+//     required: [true, 'Name is required'],
+//   },
+//   gender: {
+//     type: String,
+//     enum: {
+//       values: ['male', 'female', 'other'],
+//       message: '{VALUE} is not valid',
+//     },
+//     require: true,
+//   },
+//   //   gender:["male","female"]
+//   dateOfBirth: { type: String },
+//   // dateOfBirth: String,
+//   email: {
+//     type: String,
+//     required: [true, 'Email is required'],
+//     unique: true,
+//     // validate: {
+//     //   validator: (value: string) => validator.isEmail(value),
+//     //   message: '{VALUE} is not valid email',
+//     // },
+//   },
+//   contactNo: { type: String, required: [true, 'Contact no is required'] },
+//   // bloodGroup: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+//   bloodGroup: {
+//     type: String,
+//     enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+//   },
+//   emergencyContactNo: {
+//     type: String,
+//     required: [true, 'Emergency contact no is required'],
+//   },
+//   presentAddress: {
+//     type: String,
+//     required: [true, 'Present address is required'],
+//   },
+//   permanentAddress: {
+//     type: String,
+//     required: [true, 'Permanent address is required'],
+//   },
+//   guardian: {
+//     type: guardianSchema,
+//     required: [true, 'Guardian is required'],
+//   },
+//   localGuardian: {
+//     type: localGuardianSchema,
+//     required: [true, 'Local guardian is required'],
+//   },
+//   // isActive: ['active', 'inactive'],
+//   isActive: {
+//     type: String,
+//     enum: {
+//       values: ['active', 'inactive'],
+//       message: '{VALUE} is not valid',
+//     },
+//     required: true,
+//     default: 'active',
+//   },
+// });
+
+// => creating a custom instance method
+// studentSchema.methods.isUserExits = async function (id: string) {
+//   const existingUser = await Student.findOne({ id });
+//   return existingUser;
+// };
+
+// => Custom static methods
+const studentSchema = new Schema<TStudent, StudentModel>({
   id: { type: String, required: [true, 'Id is required'], unique: true },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    unique: true,
+    maxlength: [20, "Password can't be more than 20 characters"],
+  },
   name: {
     type: userNameSchema,
     required: [true, 'Name is required'],
@@ -133,5 +279,23 @@ const studentSchema = new Schema<Student>({
   },
 });
 
+// => pre save middleware/hook: will work on create() and save()
+studentSchema.pre('save', async function (next) {
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  const user = this;
+  user.password = await bcrypt.hash(
+    user.password,
+    Number(config.bcrypt_salt_rounds),
+  );
+
+  next();
+});
+
+// => creating a custom static method
+studentSchema.statics.isUserExits = async function (id: string) {
+  const existingUser = await Student.findOne({ id });
+  return existingUser;
+};
+
 // Model
-export const StudentModel = model<Student>('Student', studentSchema);
+export const Student = model<TStudent, StudentModel>('Student', studentSchema);
